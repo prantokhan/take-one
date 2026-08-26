@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  node-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntax-check all game scripts
+        run: |
+          for f in app.js ai-client.js index.html; do
+            if [[ $f == *.js ]]; then node --check "$f"; fi
+          done
+          node --check Unreal/TakeOne/Tools/ai-scene-service.mjs
+          node --check Unreal/TakeOne/Tools/mock-scene-service.mjs
+
+      - name: Adapter self-test (deterministic generators)
+        run: node Unreal/TakeOne/Tools/ai-scene-service.mjs --check
+
+      - name: Smoke-test endpoints offline
+        run: |
+          node Unreal/TakeOne/Tools/ai-scene-service.mjs &
+          sleep 2
+          curl -sf http://127.0.0.1:8788/v1/health | tee /dev/stderr | grep -q '"service":"take-one-ai-adapter"'
+          curl -sf -X POST http://127.0.0.1:8788/v1/cast/suggest \
+            -H 'content-type: application/json' \
+            -d '{"context":{"title":"CI","genre":"Sci-Fi","count":2}}' | grep -q '"cast"'
+          curl -sf -X POST http://127.0.0.1:8788/v1/jobs \
+            -H 'content-type: application/json' \
+            -d '{"prompt":"a foggy railway station at night"}' | grep -q '"queued":true'
+          curl -sf 'http://127.0.0.1:8788/v1/jobs/next?consumer=ci' | grep -q '"scene"'
