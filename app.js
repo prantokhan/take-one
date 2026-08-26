@@ -1,5 +1,15 @@
+// Take One — the entire browser game.
+//
+// Plain script (no modules, no bundler): everything here is a top-level
+// global function or const, loaded by index.html after ai-client.js. The
+// whole game is one mutable `state` object (see createDefaultState()/
+// loadState() below) rendered into #app-view / #dialog-content as HTML
+// template strings. See CLAUDE.md for the full file map and CONTEXT.md for
+// the game's design background.
+
 const STORAGE_KEY = "take-one-production-house-v1";
 
+// Genre → key-art image shown on film cards/dialogs.
 const images = {
   "Sci-Fi": "assets/glass-river.png",
   Mystery: "assets/asterion-signal.png",
@@ -350,6 +360,12 @@ const roleGigSource = {
   "VFX Artist": "vfx-orbit"
 };
 
+// The 4-stage Greenlight creative pipeline (Pre-production → Principal
+// photography → Post-production → Distribution). openProductionStage()
+// walks the player through these in order; each choice's `effect` (a rough
+// 3-8 quality contribution) accumulates into the production's final score,
+// and `fits` lists which genres get a bonus for that choice — see
+// openProductionStage() for how `effect`/`fits` are actually combined.
 const productionStages = [
   {
     name: "Pre-production",
@@ -397,6 +413,23 @@ const productionStages = [
   }
 ];
 
+// ------------------------------------------------------------------
+// State management
+//
+// The whole game lives in one mutable `state` object (see the module-level
+// `let state = loadState()` below), persisted to localStorage after nearly
+// every mutation via saveState(). There is no framework/store — callers
+// just mutate `state` in place and call saveState() when done.
+//
+// If you add a new field to game state, add its default here so
+// createDefaultState() stays the single source of truth for shape, and
+// loadState()'s `{ ...createDefaultState(), ...stored }` merge will
+// backfill it for existing players' saved state automatically. Only add
+// bespoke migration logic (like syncPortfolioAssetDrafts() below) when a
+// simple default merge isn't enough — e.g. deriving new fields from data
+// the player already earned.
+// ------------------------------------------------------------------
+
 function createDefaultState() {
   return {
     credits: 460,
@@ -433,8 +466,13 @@ function createDefaultState() {
 function loadState() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    // Shallow-merge onto fresh defaults so any field added to
+    // createDefaultState() since the player's last save is backfilled
+    // automatically, without a dedicated migration step.
     return stored ? { ...createDefaultState(), ...stored } : createDefaultState();
   } catch (error) {
+    // Corrupt/unparsable localStorage (or private-mode restrictions) —
+    // fail safe into a fresh game rather than throwing on load.
     return createDefaultState();
   }
 }
@@ -452,6 +490,12 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+// Derives portfolio "asset drafts" (things the player can later publish/sell)
+// from gigs they've already aced. A gig qualifies once its best recorded
+// take (state.bestTakes[gigId]) scores 72+; this runs on every load so a
+// past high score keeps producing a draft even though the qualifying score
+// itself isn't re-earned. Idempotent — skips gigs that already produced an
+// owned asset or a pending draft.
 function syncPortfolioAssetDrafts() {
   Object.entries(assetWorkByGig).forEach(([gigId, assetWork]) => {
     const qualifies = (state.bestTakes[gigId] || 0) >= 72;
@@ -537,6 +581,18 @@ function setView(nextView) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   view.focus({ preventScroll: true });
 }
+
+// ------------------------------------------------------------------
+// View rendering.
+//
+// Each render* function below builds a full HTML string for one nav
+// section and is called from the renderApp() dispatcher based on
+// `currentView`. There is no diffing/virtual DOM — every call replaces the
+// relevant container's innerHTML wholesale. Because listeners don't survive
+// an innerHTML replacement, any new interactive element added to a
+// template must also get a handler wired in bindViewEvents() (further
+// below), which re-runs after every render.
+// ------------------------------------------------------------------
 
 function renderApp() {
   const rank = getRank();
@@ -1030,6 +1086,17 @@ dialog.addEventListener("close", () => {
   }
 });
 
+// ------------------------------------------------------------------
+// Gig flow: opening a gig, running the timing minigame, and scoring it.
+//
+// Three-step pipeline, each function handing off to the next:
+//   openGig()             — brief + multiple-choice creative quiz (modal form)
+//   startShootChallenge() — a timing minigame: hit a moving playhead inside a
+//                           target zone, once per "cue", three cues per gig
+//   completeGig()         — combines quiz correctness + timing accuracy into
+//                           a single 0–100 score and applies rewards
+// ------------------------------------------------------------------
+
 function openGig(gigId) {
   const gig = gigs.find(item => item.id === gigId);
   if (!gig || state.completedGigs.includes(gigId)) return;
@@ -1200,6 +1267,13 @@ function startShootChallenge(gig, answers) {
   };
 }
 
+// Scoring: 3 quiz questions → creativeScore (34 base + 22 per correct
+// answer, so 0 correct = 34, 3/3 = 100), averaged timing minigame accuracy
+// (0-100 per cue, see markBeat() above) → timingScore, blended 65/35
+// creative-weighted into the final 0-100 `score`. That score then drives
+// credit/reputation payout, whether an asset draft or script unlocks
+// (>=72 / >=56 thresholds below), and feeds hasFlopStigma() via
+// lastReleaseScore for productions specifically.
 function completeGig(gig, answers, timingScores = [70, 70, 70]) {
   const correct = answers.filter((answer, index) => answer === gig.questions[index].answer).length;
   const creativeScore = 34 + correct * 22;
@@ -1491,6 +1565,14 @@ function openGreenlight() {
   });
 }
 
+// Walks the player through one productionStages[] entry per call, advancing
+// production.stage each time. Each locked choice adds choice.effect (plus a
+// +2 genre-fit bonus, see below) to production.quality, which is the running
+// score releaseProduction() eventually turns into audience reception. Once
+// production.stage passes the end of productionStages, this triggers
+// releaseProduction() automatically. Players can bypass the fixed options
+// via "improvise" (openStageImprovise) and get an AI-rated freeform score
+// instead of a fixed `effect`.
 function openProductionStage() {
   const production = state.production;
   if (!production || production.released) return;
@@ -1830,6 +1912,12 @@ async function openStageImprovise(stageName) {
   });
 }
 
+// Turns the accumulated production.quality (from openProductionStage() /
+// openStageImprovise() choices) plus crew quality and staffing gaps into a
+// final 30-97 `score`, then derives box-office gross, crew residuals (20%
+// cut, floored at the gross itself), and the director's net take. Also
+// pushes the finished film onto state.releases (which the Catalog view
+// reads) and publishes it to the shared world catalog via publishToWorld().
 function releaseProduction() {
   const production = state.production;
   const hiredCrew = production.hiredCrew || [];
@@ -2019,6 +2107,13 @@ function renderAiChip(status, info) {
   }
 }
 
+// ------------------------------------------------------------------
+// Bootstrap: runs once when the script loads. Wires the AI status chip,
+// health-checks the adapter (ai-client.js falls back gracefully either
+// way), assigns this browser a random director identity for the shared
+// world catalog on first run, starts polling for other players' releases,
+// then performs the first render.
+// ------------------------------------------------------------------
 if (window.TakeOneAI) {
   TakeOneAI.onStatusChange(renderAiChip);
   TakeOneAI.checkHealth().then(() => {
