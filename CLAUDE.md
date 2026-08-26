@@ -80,9 +80,14 @@ FFmpeg, uploads it back to the adapter for the web game to display.
    the scene JSON — the Unreal-side half of "AI executes, never authors"),
    `TakeOneSceneBuilder`/`TakeOneSceneGeneratorSubsystem` (turn the spec
    into an actual 3D set), `TakeOnePerformer` (cast actors), and
-   `TakeOneDirectorWidget` (in-engine prompt UI). It polls the same Node
-   adapter's job queue, and on pressing `R` in-engine shoots a 12-frame
-   orbit that gets FFmpeg-encoded and uploaded back for the web game to
+   `TakeOneDirectorWidget` (in-engine prompt UI). The player possesses a
+   `TakeOneWalkPawn` — a capsule-collision `ACharacter` with WASD + mouse-look
+   movement and a first-/third-person toggle (`V`) — spawned by
+   `TakeOnePlayerController::EnsureWalkPawn()`, so the generated set is
+   actually walkable rather than only viewable through a floating free
+   camera. It polls the same Node adapter's job queue, and on pressing `R`
+   in-engine shoots a 12-frame orbit that gets FFmpeg-encoded and uploaded
+   back for the web game to
    show on film pages.
 
 ### The scene JSON contract
