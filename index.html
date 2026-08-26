@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101210">
+  <meta name="description" content="Take One, a playable AI production house prototype.">
+  <title>Take One | Production House</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <button class="brand" data-view-target="studio" aria-label="Take One studio home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span></span>
+        <span class="brand-name">TAKE<br>ONE</span>
+      </button>
+
+      <nav class="primary-nav">
+        <button class="nav-item active" data-view-target="studio"><span class="nav-glyph" aria-hidden="true">01</span><span>Studio</span></button>
+        <button class="nav-item" data-view-target="gigs"><span class="nav-glyph" aria-hidden="true">02</span><span>Gigs</span><span class="nav-count" id="gig-count">3</span></button>
+        <button class="nav-item" data-view-target="productions"><span class="nav-glyph" aria-hidden="true">03</span><span>Productions</span></button>
+        <button class="nav-item" data-view-target="catalog"><span class="nav-glyph" aria-hidden="true">04</span><span>Catalog</span></button>
+        <button class="nav-item" data-view-target="assets"><span class="nav-glyph" aria-hidden="true">05</span><span>Assets</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="profile-avatar" aria-hidden="true">RD</div>
+        <div class="profile-copy"><strong>Rookie Director</strong><span id="role-label">Crew Pool</span></div>
+        <button class="icon-button" id="reset-progress" title="Reset progress" aria-label="Reset game progress">&#8635;</button>
+      </div>
+    </aside>
+
+    <main class="main-frame">
+      <header class="topbar">
+        <div class="mobile-brand">TAKE ONE</div>
+        <div class="world-status"><span class="status-dot"></span> World 01 online <span class="topbar-separator">/</span> Cycle 07</div>
+        <span class="ai-chip" id="ai-status" title="Live model generation status">AI &middot; checking&hellip;</span>
+        <div class="player-stats" aria-label="Player balances">
+          <div class="stat"><span>Credits</span><strong id="credit-balance">0</strong></div>
+          <div class="stat"><span>Reputation</span><strong id="rep-balance">0</strong></div>
+        </div>
+      </header>
+
+      <div id="app-view" tabindex="-1"></div>
+    </main>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <button class="active" data-view-target="studio"><span aria-hidden="true">01</span>Studio</button>
+      <button data-view-target="gigs"><span aria-hidden="true">02</span>Gigs</button>
+      <button data-view-target="productions"><span aria-hidden="true">03</span>Slate</button>
+      <button data-view-target="catalog"><span aria-hidden="true">04</span>Watch</button>
+      <button data-view-target="assets"><span aria-hidden="true">05</span>Assets</button>
+    </nav>
+  </div>
+
+  <dialog id="game-dialog" aria-labelledby="dialog-title">
+    <div id="dialog-content"></div>
+  </dialog>
+
+  <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="ai-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

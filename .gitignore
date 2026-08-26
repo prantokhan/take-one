@@ -1,0 +1,25 @@
+# --- Unreal Engine build artifacts (never commit) ---
+Unreal/TakeOne/Binaries/
+Unreal/TakeOne/Intermediate/
+Unreal/TakeOne/DerivedDataCache/
+Unreal/TakeOne/Saved/
+Unreal/TakeOne/Build/
+*.vcxproj
+*.sln
+*.suo
+*.pdb
+
+# --- Local run artifacts ---
+.playwright-cli/
+.tmp-encode/
+*.log
+
+# --- Harness / local tooling ---
+.agents/
+
+# --- Unrelated local files ---
+input-cleanup-rollback.ps1
+
+# --- OS junk ---
+Thumbs.db
+Desktop.ini

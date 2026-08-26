@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0",
+  "title": "Night Platform",
+  "summary": "A rain-dark railway platform with a strong central vanishing point.",
+  "environment": {
+    "ground_color": "#080B0D",
+    "sky_light_color": "#1E3850",
+    "sky_light_intensity": 0.8,
+    "sun_color": "#6B94B8",
+    "sun_intensity": 2,
+    "sun_rotation": {
+      "pitch": -38,
+      "yaw": -25,
+      "roll": 0
+    },
+    "fog_density": 0.028
+  },
+  "camera": {
+    "location": {
+      "x": -1700,
+      "y": -1500,
+      "z": 500
+    },
+    "rotation": {
+      "pitch": -9,
+      "yaw": 39,
+      "roll": 0
+    },
+    "fov": 50
+  },
+  "objects": [
+    {
+      "id": "platform",
+      "label": "Railway platform",
+      "primitive": "cube",
+      "location": {
+        "x": 200,
+        "y": 0,
+        "z": 55
+      },
+      "rotation": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "scale": {
+        "x": 30,
+        "y": 5,
+        "z": 1.1
+      },
+      "color": "#202427",
+      "cast_shadow": true,
+      "asset_hint": "weathered 1980s concrete railway platform"
+    },
+    {
+      "id": "station_wall",
+      "label": "Station wall",
+      "primitive": "cube",
+      "location": {
+        "x": 300,
+        "y": 650,
+        "z": 350
+      },
+      "rotation": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "scale": {
+        "x": 27,
+        "y": 0.5,
+        "z": 7
+      },
+      "color": "#292F30",
+      "cast_shadow": true,
+      "asset_hint": "aged tiled railway station wall"
+    },
+    {
+      "id": "practical_lamp",
+      "label": "Warm platform lamp",
+      "primitive": "sphere",
+      "location": {
+        "x": -500,
+        "y": 390,
+        "z": 590
+      },
+      "rotation": {
+        "pitch": 0,
+        "yaw": 0,
+        "roll": 0
+      },
+      "scale": {
+        "x": 0.28,
+        "y": 0.28,
+        "z": 0.28
+      },
+      "color": "#FF9E3D",
+      "cast_shadow": false,
+      "asset_hint": "warm tungsten station practical light"
+    }
+  ]
+}
