@@ -76,16 +76,46 @@ local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(0, 6)
 buttonCorner.Parent = generateButton
 
+-- Frees the mouse for clicking GUI. LockFirstPerson otherwise keeps the
+-- cursor pinned to screen center for camera look — and Roblox's default
+-- camera control script re-asserts that lock every frame, so merely setting
+-- MouseBehavior once here gets silently overwritten a frame later (found by
+-- play-testing via Roblox Studio MCP: clicks landed on-screen but the
+-- TextBox never focused). The fix is to also switch the camera to
+-- Scriptable, which pauses the built-in controller so it stops fighting us;
+-- CameraType is restored to Custom to hand control back on close.
+local function setMouseFreedForUI(freed)
+	UserInputService.MouseBehavior = freed and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+	UserInputService.MouseIconEnabled = freed
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera.CameraType = freed and Enum.CameraType.Scriptable or Enum.CameraType.Custom
+	end
+end
+
+local function closePanel()
+	screenGui.Enabled = false
+	setMouseFreedForUI(false)
+end
+
 local function submitPrompt()
-	local text = input.Text
-	if text and #text > 0 then
+	-- Strip any newline Return may have inserted before this handler runs
+	-- (see the Return-key case below) so a trailing "\n" never reaches the
+	-- generator/server.
+	local text = (input.Text or ""):gsub("[\r\n]+$", "")
+	if #text > 0 then
 		GenerateScene:FireServer(text)
-		screenGui.Enabled = false
+		closePanel()
 	end
 end
 
 generateButton.MouseButton1Click:Connect(submitPrompt)
 
+-- FocusLost's enterPressed only fires this way for single-line TextBoxes;
+-- kept as a defensive fallback, but the real Enter handling for this
+-- MultiLine box is the UserInputService case below (Return inserts a
+-- newline in a MultiLine box instead of losing focus, so this alone would
+-- never fire here — found by actually play-testing via Roblox Studio MCP).
 input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		submitPrompt()
@@ -93,13 +123,19 @@ input.FocusLost:Connect(function(enterPressed)
 end)
 
 UserInputService.InputBegan:Connect(function(inputObject, gameProcessed)
-	if gameProcessed then
-		return
-	end
-	if inputObject.KeyCode == Enum.KeyCode.P then
+	if inputObject.KeyCode == Enum.KeyCode.P and not gameProcessed then
 		screenGui.Enabled = not screenGui.Enabled
+		setMouseFreedForUI(screenGui.Enabled)
 		if screenGui.Enabled then
 			input:CaptureFocus()
 		end
+		return
+	end
+
+	-- Return while the prompt box is focused submits, rather than only
+	-- inserting a newline (MultiLine boxes don't fire FocusLost on Return).
+	if inputObject.KeyCode == Enum.KeyCode.Return and UserInputService:GetFocusedTextBox() == input then
+		submitPrompt()
+		input:ReleaseFocus()
 	end
 end)

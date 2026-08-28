@@ -48,23 +48,41 @@ src/StarterPlayer/StarterPlayerScripts/FirstPersonCamera.client.lua — locks ca
      press **Enter** or click **Generate set**
    - The set builds ~60 studs from spawn and teleports you to it
 
-## Known gaps / things to check on first run
+## Verified via live play-testing (Roblox Studio MCP)
 
-I wrote and reasoned through this code but **could not run Roblox Studio
-in the environment I authored it in** (no GUI/display available there) —
-same caveat as the Unreal C++. Likely things to check:
+Unlike the Unreal C++, this was actually played, not just reasoned about —
+via Roblox Studio's built-in MCP server (Assistant → Manage MCP Servers),
+connected to and driven directly from this environment. Confirmed working
+end-to-end: spawn locked into first-person → press P → panel opens → click
+the TextBox → type a prompt → press Enter → server builds a real, collidable
+Part set in Workspace → GUI closes → player teleports to the new set → night
+lighting triggers correctly for prompts with "midnight"/"dark"/etc.
+
+Two real bugs were found and fixed this way (both fixed in the current
+source, not left as gaps):
+
+1. **Enter didn't submit.** `MultiLine = true` TextBoxes don't fire
+   `FocusLost(enterPressed=true)` on Return — Return just inserts a newline
+   instead. Fixed by handling Return explicitly via
+   `UserInputService:GetFocusedTextBox()` rather than relying only on
+   `FocusLost`.
+2. **Clicks on the panel silently did nothing.** `LockFirstPerson` camera
+   mode keeps the mouse locked to screen center for camera look, and
+   Roblox's built-in camera controller re-asserts that lock every frame —
+   so setting `MouseBehavior` once when the panel opened was immediately
+   overwritten. Fixed by also switching `workspace.CurrentCamera.CameraType`
+   to `Scriptable` while the panel is open (pausing the built-in
+   controller), restored to `Custom` on close.
+
+## Remaining things worth a look
 
 - `Enum.PartType.Wedge` doesn't exist — wedges use a separate `WedgePart`
-  instance, which `BuildSceneHandler.server.lua` does create correctly,
-  but double-check the geometry reads sensibly in-scene (wedges rotate
-  differently than blocks around the same pivot).
-- Cylinder orientation (`CFrame.Angles(0, 0, math.rad(90))`) — verify
-  cylinders actually stand upright rather than lying on their side; Roblox
-  cylinders default to lying along local X.
-- `SceneGenerator`'s `bit32` usage assumes standard Luau `bit32` semantics
-  (unsigned 32-bit) — should be fine on current Roblox, but worth a quick
-  sanity check that colors/positions look intentional rather than garbled
-  for a few different prompts.
-- No collision tuning was done beyond `CanCollide = true` — dense prompts
+  instance, which `BuildSceneHandler.server.lua` does create correctly, but
+  wedge orientation relative to other primitives around the same pivot
+  wasn't specifically eyeballed.
+- Cylinder orientation (`CFrame.Angles(0, 0, math.rad(90))`) renders
+  without errors, but wasn't specifically confirmed upright vs. on its side
+  for every seed — Roblox cylinders default to lying along local X.
+- No collision tuning was done beyond `CanCollide = true` — a dense prompt
   (`count` up to 15 dressing elements) could plausibly spawn overlapping
-  geometry the player gets stuck in; worth testing a "busy" prompt.
+  geometry the player gets stuck in; only a couple of prompts were tested.
