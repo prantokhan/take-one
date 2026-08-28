@@ -87,16 +87,23 @@ local function handleGenerate(player, prompt)
 
 	-- Simple ambient mood swing so "night"/"rain"/etc. prompts read
 	-- differently, echoing the JS generator's night-aware sky/sun values.
+	-- FogStart/FogEnd are also what makes SceneGenerator's backdrop ring
+	-- (radius 70-170) actually read as a hazy distant skyline instead of
+	-- either popping sharply against the sky (fog too far) or vanishing
+	-- entirely (fog too close, previously 100000 = effectively off).
 	local lighting = game:GetService("Lighting")
 	if scene.night then
 		lighting.Brightness = 1
 		lighting.ClockTime = 0
 		lighting.FogColor = Color3.fromRGB(10, 15, 20)
-		lighting.FogEnd = 300
+		lighting.FogStart = 40
+		lighting.FogEnd = 260
 	else
 		lighting.Brightness = 2.5
 		lighting.ClockTime = 14
-		lighting.FogEnd = 100000
+		lighting.FogColor = Color3.fromRGB(180, 195, 210)
+		lighting.FogStart = 120
+		lighting.FogEnd = 420
 	end
 
 	-- Move the requesting player's character to the new set so they don't

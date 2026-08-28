@@ -43,14 +43,21 @@ local function colorFromSeed(seed, floor)
 	return Color3.fromRGB(r, g, b)
 end
 
+-- Whole-word match via Lua frontier pattern (%f), not a plain substring
+-- search — found by play-testing that "training" contains "rain" and was
+-- silently triggering night lighting on unrelated daytime prompts.
+local function hasWord(text, word)
+	return text:find("%f[%a]" .. word .. "%f[%A]") ~= nil
+end
+
 -- Generates a set layout for `prompt`. Returns:
 --   { title, summary, night, objects = { {id, label, primitive, cframe, size, color, castShadow}, ... } }
 function SceneGenerator.Generate(prompt)
 	prompt = tostring(prompt or "")
 	local lower = string.lower(prompt)
 	local seed = hashOf(prompt)
-	local night = string.find(lower, "night") or string.find(lower, "dark")
-		or string.find(lower, "midnight") or string.find(lower, "rain")
+	local night = hasWord(lower, "night") or hasWord(lower, "dark")
+		or hasWord(lower, "midnight") or hasWord(lower, "rain") or hasWord(lower, "dusk")
 
 	local objects = {}
 
@@ -103,6 +110,41 @@ function SceneGenerator.Generate(prompt)
 			),
 			color = colorFromSeed(bit32.rshift(elementSeed, 6), 0x20),
 			castShadow = index % 3 ~= 0,
+		})
+	end
+
+	-- Backdrop ring: taller, farther-out masses so the horizon isn't just
+	-- empty baseplate past the near dressing elements. Fewer, bigger, and
+	-- pushed well beyond the walkable area (radius 70-170) so they read as
+	-- distant skyline/terrain rather than things the player bumps into.
+	local backdropCount = 10 + (seed % 6)
+	for index = 0, backdropCount - 1 do
+		local backdropSeed = hashOf(prompt .. ":backdrop:" .. index)
+		local angle = (backdropSeed % 628) / 100
+		local radius = 70 + (backdropSeed % 100)
+		local height = 30 + (backdropSeed % 90)
+
+		table.insert(objects, {
+			id = "backdrop_" .. index,
+			label = "Distant skyline mass",
+			primitive = pick({ "Block", "Cylinder" }, backdropSeed), -- flatter silhouettes read better at distance than Ball/Wedge
+			cframe = CFrame.new(
+				math.cos(angle) * radius,
+				height / 2,
+				math.sin(angle) * radius
+			) * CFrame.Angles(0, math.rad(backdropSeed % 90), 0),
+			size = Vector3.new(
+				6 + (backdropSeed % 14),
+				height,
+				6 + (bit32.rshift(backdropSeed, 4) % 14)
+			),
+			-- Desaturated and darkened toward the fog/sky color so distant
+			-- masses read as atmospheric haze rather than competing with the
+			-- near dressing elements' saturated colors.
+			color = night
+				and Color3.fromRGB(14 + (backdropSeed % 10), 18 + (backdropSeed % 10), 24 + (backdropSeed % 12))
+				or Color3.fromRGB(90 + (backdropSeed % 40), 100 + (backdropSeed % 40), 112 + (backdropSeed % 40)),
+			castShadow = false, -- distant masses shouldn't throw long shadows across the playable floor
 		})
 	end
 
