@@ -8,19 +8,40 @@
 
 ## 📸 What it looks like
 
-![Studio view — the career dashboard](docs/screenshots/studio.png)
+**The studio lot is the game.** No dashboards: you walk a blocky avatar around a 3D backlot, and every building is a door into part of your career.
 
-**Prompt the world engine** with any set description — a local LLM designs it:
+![The Take One studio lot from above](docs/screenshots/lot-aerial.png)
 
-![Prompt the world](docs/screenshots/world-prompt.png)
+![Walking the lot in third person, with the HUD and building dock](docs/screenshots/lot-3d.png)
+
+**Prompt the world** with any set description. The set is generated, previewed in 3D, and can be exported to Roblox:
+
+![Prompt the world with a live 3D set preview](docs/screenshots/world-prompt.png)
+
+**Walk the set you just made** in the same window, and shoot takes on the glowing camera marks:
+
+![Walking a generated snowy forest set](docs/screenshots/walk-set.png)
+
+**Take gigs at the Crew Board** to build credits and reputation:
+
+![Crew Board panel over the lot](docs/screenshots/crew-board.png)
 
 ## 🎮 The game
 
-You don't play *a* movie — you **run a production house**:
+You don't play *a* movie — you **run a production house**, on foot. Walk the lot (WASD, mouse to look, Space to jump, V for first/third person) and press **E** at a door, or use the dock / keys **1–6**:
+
+| Building | What happens there |
+|---|---|
+| ⭐ Crew Board | Take gigs |
+| ▶ Soundstage 1 | Greenlight and run your production; walk its key set |
+| ☆ Cinema | Watch the catalog |
+| ■ Prop House | Publish reusable assets |
+| ☼ Front Office | End the cycle, career and producer desk |
+| ◉ World Tower | Prompt the world, then walk the set in 3D |
 
 | Stage | What you do |
 |---|---|
-| 🎭 **Take gigs** | Actor, Writer, Set Crew, Drone Op, Videographer, VFX — creative briefs + a timing-based execution minigame |
+| 🎭 **Take gigs** | Actor, Writer, Set Crew, Drone Op, Videographer, VFX — read the director's brief and make the right creative calls |
 | 📈 **Build reputation** | Scores earn credits + reputation; **flops are real** — score under 50 and crews pay you less until you recover |
 | 🪑 **Greenlight (rep 60)** | Pick a script, hire specialist crew, make 4 creative calls — or **improvise your own directions** and let the AI rate them |
 | 🧠 **Direct the set** | Your cast has **persistent personalities** — give performance notes and a local LLM writes their in-character lines |
@@ -36,7 +57,11 @@ Every AI feature runs on **your machine** via [Ollama](https://ollama.com) — n
 - **Adaptive story beats** — your free-text direction becomes shot notes with a quality rating
 - **Object refinement** — key set pieces decompose into dressed compound geometry (lamp = pole + shade + glowing bulb)
 
-**No model? No problem.** Deterministic fallback generators keep every feature playable offline.
+**No model? No problem.** Deterministic fallback generators keep every feature playable offline. Offline sets are themed from your prompt's keywords (harbor, city, forest, desert, interior, sci-fi, snow, rain, fire).
+
+## 🧱 Roblox MVP
+
+The same career loop also runs on Roblox (`Roblox/`): the studio lot with press-**E** doors, gigs, greenlight, stage decisions, release and residuals, with a server-authoritative economy and DataStore saves. Open `Roblox/TakeOne.rbxl` in Roblox Studio and press Play. Any generated set can also be exported from the browser game as a Luau script that builds it in Studio. See [Roblox/README.md](Roblox/README.md).
 
 ## 🏗️ Architecture
 
@@ -98,6 +123,10 @@ in-engine to shoot your film. FFmpeg (`winget install Gyan.FFmpeg`) enables MP4 
 - [x] Local-LLM generation: sets, cast, dialogue, story beats
 - [x] UE 5.8 set construction + performers + moving-master capture
 - [x] FFmpeg film encoding, shared world catalog with cross-player ratings
+- [x] Walkable 3D studio lot and generated sets in the browser, HUD-only play
+- [x] Roblox MVP of the career loop, plus set export to Roblox
+- [ ] HD Unreal shots (1080p/4K, 24 fps) on hosted GPU render servers
+- [ ] WebXR/VR set walking for real-world previs and location scouting
 - [ ] True mesh generation (Hunyuan3D/TRELLIS seam ready — needs a local GPU)
 - [ ] Sequenced shots via Movie Render Queue
 - [ ] Live co-presence multiplayer

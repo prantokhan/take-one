@@ -551,6 +551,9 @@ function openSetWalk(scene) {
   if (dialog.open) dialog.close();
   lot.activeSet = scene;
   currentView = "lot";
+  // Clear the current view first: renderApp() deliberately won't rebuild a
+  // set that's already on screen, but here we're switching to a new one.
+  view.innerHTML = "";
   renderApp();
 }
 
