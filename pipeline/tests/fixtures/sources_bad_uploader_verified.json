@@ -1,0 +1,34 @@
+[
+  {
+    "source_id": "nosferatu_1922",
+    "title": "Nosferatu",
+    "year_published": 1922,
+    "files": [
+      "nosferatu_1922.mp4"
+    ],
+    "license": {
+      "status": "public_domain",
+      "basis": "Published 1922; US copyright expired (95-year term)."
+    },
+    "audio_license": {
+      "status": "stripped",
+      "basis": "Original is silent; any accompanying score removed before ingest."
+    },
+    "verification": {
+      "verified_by": "uploader",
+      "verification_method": "catalog_of_copyright_entries",
+      "verified_on": "2026-09-21",
+      "next_review_date": "2027-09-21"
+    },
+    "consent_status": {
+      "applicable": false
+    },
+    "risk_flags": {
+      "contains_trademarks": false,
+      "contains_architectural_copyright_risk": false,
+      "moral_rights_jurisdictions": [
+        "DE"
+      ]
+    }
+  }
+]

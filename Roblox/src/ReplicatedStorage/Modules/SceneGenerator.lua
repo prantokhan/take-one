@@ -50,14 +50,55 @@ local function hasWord(text, word)
 	return text:find("%f[%a]" .. word .. "%f[%A]") ~= nil
 end
 
+-- Three lighting moods instead of a night/day binary: "night" (dark,
+-- moody), "dusk" (warm golden-hour, e.g. sunset/evening/twilight prompts),
+-- and "day" (the default). Found via play-testing: a "sunset" prompt was
+-- rendering at full flat daytime brightness because the old system only
+-- had two states and "sunset" matched neither.
+local function detectMood(lower)
+	if hasWord(lower, "night") or hasWord(lower, "dark") or hasWord(lower, "midnight") or hasWord(lower, "rain") then
+		return "night"
+	end
+	if hasWord(lower, "dusk") or hasWord(lower, "sunset") or hasWord(lower, "evening")
+		or hasWord(lower, "twilight") or hasWord(lower, "golden") then
+		return "dusk"
+	end
+	return "day"
+end
+
+local FLOOR_COLOR_BY_MOOD = {
+	night = Color3.fromRGB(20, 27, 34),
+	dusk = Color3.fromRGB(46, 38, 40),
+	day = Color3.fromRGB(60, 70, 78),
+}
+
+local BACKDROP_COLOR_BY_MOOD = {
+	night = function(seed) return Color3.fromRGB(14 + (seed % 10), 18 + (seed % 10), 24 + (seed % 12)) end,
+	dusk = function(seed) return Color3.fromRGB(110 + (seed % 40), 70 + (seed % 30), 60 + (seed % 30)) end,
+	day = function(seed) return Color3.fromRGB(90 + (seed % 40), 100 + (seed % 40), 112 + (seed % 40)) end,
+}
+
+-- Water-themed prompts ("coastline", "ocean", "lake"...) get a real body of
+-- Terrain water bordering the set — a plain colored Part can't read as
+-- water (no waves, no transparency, no wave-shader), but Roblox's Terrain
+-- service has a genuine Water material with real wave animation and
+-- transparency built into the engine. BuildSceneHandler is what actually
+-- fills the terrain; this just decides whether to.
+local function detectWater(lower)
+	return hasWord(lower, "water") or hasWord(lower, "ocean") or hasWord(lower, "sea")
+		or hasWord(lower, "coast") or hasWord(lower, "coastline") or hasWord(lower, "wave")
+		or hasWord(lower, "waves") or hasWord(lower, "river") or hasWord(lower, "lake")
+		or hasWord(lower, "shore") or hasWord(lower, "beach")
+end
+
 -- Generates a set layout for `prompt`. Returns:
---   { title, summary, night, objects = { {id, label, primitive, cframe, size, color, castShadow}, ... } }
+--   { title, summary, mood, water, objects = { {id, label, primitive, cframe, size, color, castShadow}, ... } }
 function SceneGenerator.Generate(prompt)
 	prompt = tostring(prompt or "")
 	local lower = string.lower(prompt)
 	local seed = hashOf(prompt)
-	local night = hasWord(lower, "night") or hasWord(lower, "dark")
-		or hasWord(lower, "midnight") or hasWord(lower, "rain") or hasWord(lower, "dusk")
+	local mood = detectMood(lower)
+	local water = detectWater(lower)
 
 	local objects = {}
 
@@ -68,7 +109,7 @@ function SceneGenerator.Generate(prompt)
 		primitive = "Block",
 		cframe = CFrame.new(0, 0.5, 0),
 		size = Vector3.new(80, 1, 80),
-		color = night and Color3.fromRGB(20, 27, 34) or Color3.fromRGB(60, 70, 78),
+		color = FLOOR_COLOR_BY_MOOD[mood],
 		castShadow = true,
 	})
 
@@ -141,9 +182,7 @@ function SceneGenerator.Generate(prompt)
 			-- Desaturated and darkened toward the fog/sky color so distant
 			-- masses read as atmospheric haze rather than competing with the
 			-- near dressing elements' saturated colors.
-			color = night
-				and Color3.fromRGB(14 + (backdropSeed % 10), 18 + (backdropSeed % 10), 24 + (backdropSeed % 12))
-				or Color3.fromRGB(90 + (backdropSeed % 40), 100 + (backdropSeed % 40), 112 + (backdropSeed % 40)),
+			color = BACKDROP_COLOR_BY_MOOD[mood](backdropSeed),
 			castShadow = false, -- distant masses shouldn't throw long shadows across the playable floor
 		})
 	end
@@ -151,7 +190,8 @@ function SceneGenerator.Generate(prompt)
 	return {
 		title = "Director Set: " .. string.sub(prompt, 1, 40),
 		summary = "Offline layout for: " .. string.sub(prompt, 1, 160),
-		night = night and true or false,
+		mood = mood,
+		water = water,
 		objects = objects,
 	}
 end
