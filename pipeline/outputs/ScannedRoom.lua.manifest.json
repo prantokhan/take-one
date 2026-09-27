@@ -1,0 +1,11 @@
+{
+  "stage": "export_roblox",
+  "source_id": "room_walkthrough",
+  "model": "D:\\AI\\wa\\model_sharp\\0",
+  "points_in_model": 3972,
+  "points_exported": 2811,
+  "cameras_exported": 0,
+  "scale": 6.0,
+  "mean_error_px": 0.8422,
+  "NOT_A_MESH": "sparse point cloud; dense MVS requires CUDA"
+}

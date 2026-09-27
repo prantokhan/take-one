@@ -23,3 +23,12 @@ input-cleanup-rollback.ps1
 # --- OS junk ---
 Thumbs.db
 Desktop.ini
+
+# --- Pipeline (Python photogrammetry component) ---
+pipeline/data/raw/
+pipeline/data/frames/
+pipeline/data/reconstructions/
+pipeline/logs/
+pipeline/.venv/
+pipeline/**/__pycache__/
+pipeline/.pytest_cache/

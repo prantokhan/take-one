@@ -8,7 +8,7 @@
   <title>Take One | Production House</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="hud-mode">
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
       <button class="brand" data-view-target="studio" aria-label="Take One studio home">
@@ -17,7 +17,8 @@
       </button>
 
       <nav class="primary-nav">
-        <button class="nav-item active" data-view-target="studio"><span class="nav-glyph" aria-hidden="true">01</span><span>Studio</span></button>
+        <button class="nav-item active" data-view-target="lot"><span class="nav-glyph" aria-hidden="true">00</span><span>The Lot</span></button>
+        <button class="nav-item" data-view-target="studio"><span class="nav-glyph" aria-hidden="true">01</span><span>Studio</span></button>
         <button class="nav-item" data-view-target="gigs"><span class="nav-glyph" aria-hidden="true">02</span><span>Gigs</span><span class="nav-count" id="gig-count">3</span></button>
         <button class="nav-item" data-view-target="productions"><span class="nav-glyph" aria-hidden="true">03</span><span>Productions</span></button>
         <button class="nav-item" data-view-target="catalog"><span class="nav-glyph" aria-hidden="true">04</span><span>Catalog</span></button>
@@ -34,7 +35,7 @@
     <main class="main-frame">
       <header class="topbar">
         <div class="mobile-brand">TAKE ONE</div>
-        <div class="world-status"><span class="status-dot"></span> World 01 online <span class="topbar-separator">/</span> Cycle 07</div>
+        <div class="world-status"><span class="status-dot"></span> World 01 <span class="topbar-separator">/</span> <span id="hud-cycle">Cycle 07</span> <span class="topbar-separator">/</span> <span id="hud-rank">Crew Pool</span></div>
         <span class="ai-chip" id="ai-status" title="Live model generation status">AI &middot; checking&hellip;</span>
         <div class="player-stats" aria-label="Player balances">
           <div class="stat"><span>Credits</span><strong id="credit-balance">0</strong></div>
@@ -46,7 +47,8 @@
     </main>
 
     <nav class="mobile-nav" aria-label="Mobile navigation">
-      <button class="active" data-view-target="studio"><span aria-hidden="true">01</span>Studio</button>
+      <button class="active" data-view-target="lot"><span aria-hidden="true">00</span>Lot</button>
+      <button data-view-target="studio"><span aria-hidden="true">01</span>Studio</button>
       <button data-view-target="gigs"><span aria-hidden="true">02</span>Gigs</button>
       <button data-view-target="productions"><span aria-hidden="true">03</span>Slate</button>
       <button data-view-target="catalog"><span aria-hidden="true">04</span>Watch</button>
@@ -61,6 +63,8 @@
   <div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
   <script src="ai-client.js"></script>
+  <script src="set-viewer.js"></script>
   <script src="app.js"></script>
+  <script src="lot.js"></script>
 </body>
 </html>

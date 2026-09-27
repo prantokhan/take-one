@@ -1,0 +1,11 @@
+{
+  "stage": "export_roblox",
+  "source_id": "synthetic_orbit_test",
+  "model": "D:\\AI\\e2e\\model\\0",
+  "points_in_model": 64,
+  "points_exported": 64,
+  "cameras_exported": 15,
+  "scale": 8.0,
+  "mean_error_px": 0.2249,
+  "NOT_A_MESH": "sparse point cloud; dense MVS requires CUDA"
+}

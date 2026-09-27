@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://take-one.local/schemas/source.schema.json",
+  "title": "Take One source record",
+  "description": "Structural rules for one licensed source in sources.json. NOTE: this schema enforces STRUCTURE only. Semantic rules -- rejecting uploader-asserted verification, detecting stale next_review_date, cross-record duplicate detection -- are enforced Python-side in scripts/preflight.py because JSON Schema cannot express 'date is in the past' or 'unique across the document'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "title",
+    "files",
+    "license",
+    "audio_license",
+    "verification",
+    "consent_status",
+    "risk_flags"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "minLength": 3,
+      "maxLength": 64,
+      "description": "Lowercase, digits, underscores only. Unique across sources.json (uniqueness checked in preflight, not here)."
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "year_published": { "type": "integer", "minimum": 1800, "maximum": 2100 },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Exact filenames this record covers. Matched exactly -- no substring, no fuzzy matching."
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis"],
+      "properties": {
+        "status": { "enum": ["public_domain", "cc_licensed", "government", "commissioned", "licensed_stock"] },
+        "basis": { "type": "string", "minLength": 3 },
+        "license_url": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "audio_license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Audio is a SEPARATE license from video. Silent films are often rescored and the score may still be under copyright.",
+      "properties": {
+        "status": { "enum": ["public_domain", "cc_licensed", "licensed", "unknown", "stripped", "not_applicable"] },
+        "basis": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verified_by", "verification_method", "verified_on", "next_review_date"],
+      "properties": {
+        "verified_by": {
+          "type": "string",
+          "minLength": 2,
+          "description": "A named human or institution. Values of uploader/ia/internet_archive/unknown are REJECTED by preflight -- IA 'PD' tags are uploader-asserted, not verified."
+        },
+        "verification_method": {
+          "enum": ["catalog_of_copyright_entries", "rights_statement", "direct_license", "government_work", "contract", "other"]
+        },
+        "verification_method_detail": {
+          "type": "string",
+          "description": "REQUIRED by preflight when verification_method is 'other'."
+        },
+        "verified_on": { "type": "string", "format": "date" },
+        "next_review_date": {
+          "type": "string",
+          "format": "date",
+          "description": "US PD cutoff is 95 years after publication and moves every Jan 1. This date is authoritative; preflight fails if it is in the past."
+        }
+      }
+    },
+    "consent_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicable"],
+      "description": "Consent is separate from copyright. Commissioned capture needs model releases, not just object masking.",
+      "properties": {
+        "applicable": { "type": "boolean" },
+        "model_releases_on_file": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "risk_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "These SURFACE known gaps in logs. They do not clear them. See Known Gaps in CLAUDE.md.",
+      "properties": {
+        "contains_trademarks": { "type": "boolean" },
+        "contains_architectural_copyright_risk": { "type": "boolean" },
+        "moral_rights_jurisdictions": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

@@ -21,6 +21,15 @@ JSON schema before it reaches a client — see `ServiceContract/` and
 `TakeOneSceneJson` in the Unreal source. Also: **no real-person likenesses,
 original IP only.**
 
+## Sub-projects with their own CLAUDE.md
+
+- **`pipeline/`** — an experimental Python movie-to-3D photogrammetry
+  pipeline (COLMAP/GLOMAP → Roblox-ready assets). Completely separate from
+  the game described below: different language, different conventions, its
+  own test suite and enforcement gates. See
+  [`pipeline/CLAUDE.md`](pipeline/CLAUDE.md). Nothing in this file applies
+  there.
+
 ## Architecture at a glance
 
 Three loosely-coupled pieces, talking to each other only over plain HTTP —

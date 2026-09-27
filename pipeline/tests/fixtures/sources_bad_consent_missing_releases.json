@@ -1,0 +1,35 @@
+[
+  {
+    "source_id": "commissioned_alley",
+    "title": "Nosferatu",
+    "year_published": 1922,
+    "files": [
+      "alley_capture.mp4"
+    ],
+    "license": {
+      "status": "commissioned",
+      "basis": "Commissioned capture, contract 2026-03."
+    },
+    "audio_license": {
+      "status": "stripped",
+      "basis": "Original is silent; any accompanying score removed before ingest."
+    },
+    "verification": {
+      "verified_by": "j_okafor",
+      "verification_method": "catalog_of_copyright_entries",
+      "verified_on": "2026-09-21",
+      "next_review_date": "2027-09-21"
+    },
+    "consent_status": {
+      "applicable": true,
+      "model_releases_on_file": false
+    },
+    "risk_flags": {
+      "contains_trademarks": false,
+      "contains_architectural_copyright_risk": false,
+      "moral_rights_jurisdictions": [
+        "DE"
+      ]
+    }
+  }
+]

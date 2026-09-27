@@ -1,0 +1,78 @@
+{
+  "_comment": "Verified-working reconstruction toolchain. The COLMAP version pin is load-bearing, not a preference -- see colmap_version_conflict below.",
+
+  "ffmpeg": {
+    "path": "ffmpeg",
+    "version": "9.0.1",
+    "install": "winget install Gyan.FFmpeg",
+    "note": "On PATH via %LOCALAPPDATA%\\Microsoft\\WinGet\\Links. extract_frames.find_tool() also checks that directory directly, because a shell started before install will not have it on PATH."
+  },
+
+  "colmap": {
+    "use_for_glomap": "D:\\AI\\tools\\colmap312\\bin\\colmap.exe",
+    "version_for_glomap": "3.12.6",
+    "also_installed": "D:\\AI\\tools\\colmap\\bin\\colmap.exe",
+    "also_installed_version": "4.2.0",
+    "gpu": false,
+    "note": "3.12.6 is the version GLOMAP 1.2.0 was built against. Use it for anything feeding GLOMAP."
+  },
+
+  "glomap": {
+    "path": "D:\\AI\\tools\\glomap\\bin\\glomap.exe",
+    "version": "1.2.0",
+    "cuda": false
+  },
+
+  "colmap_version_conflict": {
+    "problem": "GLOMAP 1.2.0 cannot read a COLMAP 4.2.0 database.",
+    "symptom": "SQLite error: SQL logic error / Failed to open database with registered factory",
+    "cause": "COLMAP 4.x added rigs/frames/frame_data/rig_sensors tables and moved pose columns off the images table. GLOMAP 1.2.0 predates that schema.",
+    "resolution": "Build the database with COLMAP 3.12.6 (the version GLOMAP 1.2.0 bundles). Verified working 2026-09-21.",
+    "verified": true
+  },
+
+  "cli_option_names": {
+    "_comment": "Option names differ between the two COLMAP majors. Using the wrong one is a hard parse error, not a warning.",
+    "3.12.6": {
+      "sift_cpu": "--SiftExtraction.use_gpu 0",
+      "match_cpu": "--SiftMatching.use_gpu 0"
+    },
+    "4.2.0": {
+      "sift_cpu": "--FeatureExtraction.use_gpu 0",
+      "match_cpu": "--FeatureMatching.use_gpu 0"
+    }
+  },
+
+  "verified_pipeline": {
+    "date": "2026-09-21",
+    "machine": "i5-10310U, 15.8 GB RAM, Intel UHD, no CUDA",
+    "input": "30 raytraced frames, 480x360, orbiting camera, textured quads",
+    "steps": [
+      "colmap312 feature_extractor --ImageReader.single_camera 1 --SiftExtraction.use_gpu 0",
+      "colmap312 sequential_matcher --SiftMatching.use_gpu 0 --SequentialMatching.overlap 12",
+      "glomap mapper --database_path DB --image_path IMAGES --output_path MODEL"
+    ],
+    "result": {
+      "registered_images": 15,
+      "of_total": 30,
+      "points_3d": 60,
+      "observations": 188,
+      "mean_track_length": 3.13,
+      "mean_reprojection_error_px": 0.299
+    },
+    "caveat": "This proves the toolchain reconstructs. It is a tiny synthetic scene -- 60 points is not a usable asset. Real footage with more texture and overlap is needed for anything exportable."
+  },
+
+  "known_failure_modes": [
+    {
+      "symptom": "Features: 0 (SIFT) on every image",
+      "cause": "Imagery has no high-frequency texture. Flat-shaded solids and gradient test patterns produce no keypoints.",
+      "fix": "Use real footage, or synthetic imagery with per-surface noise texture."
+    },
+    {
+      "symptom": "No good initial image pair found / config=6 PLANAR_OR_PANORAMIC",
+      "cause": "Matches exist but the two-view geometry is degenerate -- no valid essential matrix. Point-splat renders without true perspective surfaces do this.",
+      "fix": "Imagery must have genuine parallax: real perspective projection of real surfaces."
+    }
+  ]
+}

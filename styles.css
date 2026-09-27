@@ -1762,7 +1762,7 @@ dialog:has(.shoot-body) {
     z-index: 30;
     display: grid;
     height: 62px;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     border-top: 1px solid var(--line);
     background: #0d0f0d;
   }
@@ -2012,4 +2012,61 @@ dialog:has(.shoot-body) {
   font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+/* ---------- The Lot (walkable home screen, lot.js) ---------- */
+.lot-wrap { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #1f2a20; }
+#lot-canvas { display: block; width: 100%; height: min(72vh, 680px); min-height: 380px; touch-action: none; cursor: pointer; outline: none; }
+.lot-hud { position: absolute; inset: 12px 12px auto 12px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.lot-quest { align-self: flex-start; max-width: min(460px, 100%); background: rgba(16,18,16,0.88); border: 1px solid var(--acid); border-radius: 10px; padding: 10px 14px; }
+.lot-quest .eyebrow { display: block; margin: 0 0 2px; color: var(--acid); }
+.lot-quest strong { color: var(--paper); font-size: 15px; }
+.lot-prompt { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 10px 18px; font-size: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); white-space: nowrap; animation: lot-pulse 1.2s ease-in-out infinite; }
+.lot-prompt span { color: #555; margin-left: 6px; }
+.lot-prompt[hidden] { display: none; }
+.lot-wrap kbd, .lot-prompt kbd { display: inline-block; min-width: 22px; padding: 1px 6px; border-radius: 5px; background: var(--ink); color: var(--acid); font: 700 12px system-ui, sans-serif; text-align: center; }
+.lot-help { position: absolute; right: 12px; bottom: 10px; color: var(--muted); font-size: 12px; background: rgba(16,18,16,0.7); padding: 4px 10px; border-radius: 6px; }
+@keyframes lot-pulse { 50% { transform: translateX(-50%) scale(1.04); } }
+@media (max-width: 700px) { .lot-help { display: none; } .lot-prompt { bottom: 84px; font-size: 13px; } }
+
+/* ---------- Generated set 3D preview (set-viewer.js) ---------- */
+.set-viewer { display: block; width: 100%; height: 300px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 8px; cursor: grab; touch-action: none; }
+.set-viewer:active { cursor: grabbing; }
+
+/* ---------- First-person set walk (set-viewer.js) ---------- */
+dialog.dialog-wide { width: min(1100px, calc(100vw - 24px)); max-width: none; }
+.set-walk { display: block; width: 100%; height: min(68vh, 620px); border-radius: 8px; border: 1px solid var(--line); cursor: crosshair; touch-action: none; outline: none; }
+.set-walk-button { margin-bottom: 10px; }
+.dialog-body kbd { display: inline-block; padding: 0 5px; border-radius: 4px; background: var(--ink-3); color: var(--acid); font: 700 11px system-ui, sans-serif; }
+
+/* ---------- 3D lot toggle ---------- */
+.lot-toggle { position: absolute; top: 12px; right: 12px; z-index: 2; }
+
+/* ---------- HUD-only mode: the lot is the whole game ---------- */
+body.hud-mode .sidebar,
+body.hud-mode .mobile-nav { display: none !important; }
+body.hud-mode .main-frame { margin-left: 0; }
+body.hud-mode .topbar { position: fixed; inset: 0 0 auto 0; z-index: 30; background: linear-gradient(rgba(10,12,10,0.85), rgba(10,12,10,0)); border-bottom: 0; backdrop-filter: none; pointer-events: none; }
+body.hud-mode .topbar > * { pointer-events: auto; }
+body.hud-mode .mobile-brand { display: block; }
+body.hud-mode #app-view { max-width: none; padding: 0; }
+body.hud-mode .lot-wrap { border: 0; border-radius: 0; height: 100vh; height: 100dvh; }
+body.hud-mode #lot-canvas { height: 100vh; height: 100dvh; min-height: 0; }
+body.hud-mode .lot-hud { top: calc(var(--topbar) + 4px); }
+body.hud-mode .lot-toggle { top: calc(var(--topbar) + 8px); }
+body.hud-mode .lot-help { bottom: auto; top: calc(var(--topbar) + 50px); }
+body.hud-mode .lot-prompt { bottom: 110px; }
+.dialog-body.panel-view .view-heading h1 { font-size: 22px; }
+
+.lot-dock { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; background: rgba(16,18,16,0.82); border: 1px solid var(--line); border-radius: 14px; z-index: 2; max-width: calc(100vw - 24px); overflow-x: auto; }
+.lot-dock-button { position: relative; display: grid; justify-items: center; gap: 2px; min-width: 64px; padding: 8px 8px 6px; border: 1px solid transparent; border-radius: 10px; background: var(--ink-3); color: var(--paper); cursor: pointer; }
+.lot-dock-button:hover { border-color: var(--dock); }
+.lot-dock-icon { font-size: 18px; color: var(--dock); line-height: 1; }
+.lot-dock-label { font-size: 11px; font-weight: 800; letter-spacing: .02em; }
+.lot-dock-key { position: absolute; top: 3px; left: 6px; font: 700 9px ui-monospace, monospace; color: var(--muted); }
+.lot-dock-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #ff4d4d; color: #fff; font: 800 11px/18px system-ui, sans-serif; }
+@media (max-width: 700px) {
+  .lot-dock-button { min-width: 50px; padding: 6px 4px 4px; }
+  .lot-dock-key { display: none; }
+  body.hud-mode .player-stats { gap: 12px; }
 }

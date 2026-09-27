@@ -1,11 +1,35 @@
 # Take One — Roblox MVP
 
-A minimal, playable-FPV port of one feature from the browser game and the
-Unreal slice: walk around a set that gets built from a text prompt. This is
-**not** a port of the full game (gigs, Greenlight, catalog, economy) — just
-the walkable-set piece, since that's what was asked for and what's realistic
-to stand up quickly on Roblox. See [../CONTEXT.md](../CONTEXT.md) and
-[../CLAUDE.md](../CLAUDE.md) for the full project's scope.
+The core Take One career loop, playable on Roblox with no menus: you spawn
+on the studio lot, walk up to a building and press **E**, and everything
+happens in HUD panels.
+
+| Building | What you do there |
+|---|---|
+| Crew Board | Take gigs: director's brief quiz, then a 3-cue timing minigame (Space / HIT) |
+| Soundstage 1 | At 60 rep + 420 cr: greenlight a film (title, genre, budget, specialist crew), then lock 4 stage decisions; the last one releases it |
+| Cinema | Your releases next to the house catalog |
+| Prop House | Your portfolio of best takes |
+| Front Office | Career progress, activity, **End cycle** (residuals on 65+ films) |
+| World Tower | Prompt the world: builds a walkable set from text (also **P**) |
+
+The economy is a direct port of the browser game (`GameData.lua` mirrors
+`app.js`; the scoring formulas were checked against the JS numbers). The
+server (`GameServer.server.lua`) is authoritative, saves to a DataStore, and
+shows Credits / Rep / Rank on the leaderboard. Camera is classic Roblox
+third person; **V** toggles first person. Roblox VR works out of the box.
+
+**Quick start:** open `TakeOne.rbxl` (built with `rojo build default.project.json -o TakeOne.rbxl`)
+in Studio and press Play. For saves to persist in Studio, enable
+Game Settings > Security > *Enable Studio Access to API Services*.
+
+**Render backend (GPU Unreal servers, later):** set the attribute
+`RenderBackendUrl` on `ServerScriptService.GameServer` and allow HTTP
+requests. Every released film then POSTs `{prompt, film_id, cast_count}` to
+`{url}/v1/jobs`, the same contract the Node adapter and Unreal job queue
+already use. The job id is stored on the release.
+
+The sections below describe the original prompt-to-set slice.
 
 ## Why Roblox for this
 
