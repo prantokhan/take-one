@@ -85,7 +85,10 @@ buttonCorner.Parent = generateButton
 -- Scriptable, which pauses the built-in controller so it stops fighting us;
 -- CameraType is restored to Custom to hand control back on close.
 local function setMouseFreedForUI(freed)
-	UserInputService.MouseBehavior = freed and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+	-- Only re-lock the mouse if the player is actually in first person (V);
+	-- the default third-person camera wants a free cursor.
+	local locked = player.CameraMode == Enum.CameraMode.LockFirstPerson
+	UserInputService.MouseBehavior = (freed or not locked) and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
 	UserInputService.MouseIconEnabled = freed
 	local camera = workspace.CurrentCamera
 	if camera then
@@ -105,6 +108,8 @@ local function submitPrompt()
 	local text = (input.Text or ""):gsub("[\r\n]+$", "")
 	if #text > 0 then
 		GenerateScene:FireServer(text)
+		local gameAction = ReplicatedStorage.Remotes:FindFirstChild("GameAction")
+		if gameAction then task.spawn(function() gameAction:InvokeServer("PromptFee") end) end
 		closePanel()
 	end
 end
@@ -120,6 +125,16 @@ input.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		submitPrompt()
 	end
+end)
+
+-- The World Tower's door prompt opens this same console (via the HUD).
+local openEvent = Instance.new("BindableEvent")
+openEvent.Name = "OpenPromptTheWorld"
+openEvent.Parent = screenGui
+openEvent.Event:Connect(function()
+	screenGui.Enabled = true
+	setMouseFreedForUI(true)
+	input:CaptureFocus()
 end)
 
 UserInputService.InputBegan:Connect(function(inputObject, gameProcessed)

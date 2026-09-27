@@ -451,6 +451,7 @@ function createDefaultState() {
     lastReleaseScore: 0,
     worldPrompts: [],
     promptCycle: -1,
+    walkCycle: -1,
     filmShots: {},
     filmVideos: {},
     playerName: "",
@@ -575,7 +576,36 @@ function toast(message) {
   window.setTimeout(() => item.remove(), 3600);
 }
 
+// HUD-only play: the game lives on the 3D lot. Every other "view" (gigs,
+// productions, catalog, assets, the career summary) opens as a panel over
+// the lot instead of a separate dashboard page, so old setView() calls
+// throughout this file keep working without leaving the world.
+let currentPanel = null;
+const panelTitles = {
+  studio: ["Front Office", "Your career"],
+  gigs: ["Crew Board", "Every open call"],
+  productions: ["Soundstage 1", "Your slate"],
+  catalog: ["Cinema", "The world catalog"],
+  assets: ["Prop House", "Reusable asset library"]
+};
+
+function openViewPanel(name) {
+  const [eyebrow, title] = panelTitles[name] || ["Studio", name];
+  openDialog(`
+    <div class="dialog-header"><div><p class="eyebrow">${eyebrow}</p><h2 id="dialog-title">${title}</h2></div><button type="button" class="close-button" data-close aria-label="Close">&times;</button></div>
+    <div class="dialog-body panel-view">${viewRenderers[name]()}</div>`);
+  currentPanel = name;
+  dialog.classList.add("dialog-wide");
+  dialog.addEventListener("close", () => { dialog.classList.remove("dialog-wide"); currentPanel = null; }, { once: true });
+  bindViewEvents(dialogContent);
+}
+
 function setView(nextView) {
+  if (nextView !== "lot" && viewRenderers[nextView]) {
+    if (currentView !== "lot") { currentView = "lot"; renderApp(); }
+    openViewPanel(nextView);
+    return;
+  }
   currentView = nextView;
   renderApp();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -599,22 +629,35 @@ function renderApp() {
   document.getElementById("credit-balance").textContent = formatNumber(state.credits);
   document.getElementById("rep-balance").textContent = state.reputation;
   document.getElementById("role-label").textContent = rank.name;
+  document.getElementById("hud-rank").textContent = `${rank.tier} ${rank.name}`;
+  document.getElementById("hud-cycle").textContent = `Cycle ${String(state.cycle).padStart(2, "0")}`;
   document.getElementById("gig-count").textContent = availableGigCount();
 
   document.querySelectorAll("[data-view-target]").forEach(button => {
     button.classList.toggle("active", button.dataset.viewTarget === currentView);
   });
 
-  const renderers = {
-    studio: renderStudio,
-    gigs: renderGigs,
-    productions: renderProductions,
-    catalog: renderCatalog,
-    assets: renderAssets
-  };
-  view.innerHTML = renderers[currentView]();
+  // While walking a generated set, background re-renders (AI status, rewards)
+  // must not rebuild the view, or the set would restart and lose your takes.
+  const onSet = currentView === "lot" && typeof lot !== "undefined" && lot.activeSet && view.querySelector("#set-back");
+  if (onSet) return;
+  view.innerHTML = currentView === "lot" ? renderLot() : viewRenderers[currentView]();
   bindViewEvents();
+  if (currentView === "lot") mountLot();
+  // Keep an open panel in sync with state changes (filters, publishes...).
+  if (currentPanel && dialog.open) {
+    const body = dialogContent.querySelector(".panel-view");
+    if (body) { body.innerHTML = viewRenderers[currentPanel](); bindViewEvents(dialogContent); }
+  }
 }
+
+const viewRenderers = {
+  studio: () => renderStudio(),
+  gigs: () => renderGigs(),
+  productions: () => renderProductions(),
+  catalog: () => renderCatalog(),
+  assets: () => renderAssets()
+};
 
 function viewHeading(eyebrow, title, action = "") {
   return `
@@ -1027,21 +1070,21 @@ function openPublishAsset() {
   });
 }
 
-function bindViewEvents() {
-  view.querySelectorAll("[data-view-link]").forEach(button => button.addEventListener("click", () => setView(button.dataset.viewLink)));
-  view.querySelectorAll("[data-gig-id]").forEach(button => button.addEventListener("click", () => openGig(button.dataset.gigId)));
-  view.querySelectorAll("[data-greenlight]").forEach(button => button.addEventListener("click", openGreenlight));
-  view.querySelectorAll("[data-live-watch]").forEach(button => button.addEventListener("click", openLiveSet));
-  view.querySelectorAll("[data-production-stage]").forEach(button => button.addEventListener("click", openProductionStage));
-  view.querySelectorAll("[data-direct-set]").forEach(button => button.addEventListener("click", () => openDirectSet(0)));
-  view.querySelectorAll("[data-send-unreal]").forEach(button => button.addEventListener("click", () => sendProductionToUnreal(state.production)));
-  view.querySelectorAll("[data-export-spec]").forEach(button => button.addEventListener("click", () => exportSceneSpec(state.production)));
-  view.querySelectorAll("[data-publish-asset]").forEach(button => button.addEventListener("click", openPublishAsset));
-  view.querySelectorAll("[data-end-cycle]").forEach(button => button.addEventListener("click", advanceCycle));
-  view.querySelectorAll("[data-world-prompt]").forEach(button => button.addEventListener("click", openWorldPrompt));
-  view.querySelectorAll("[data-invest-id]").forEach(button => button.addEventListener("click", () => investIn(button.dataset.investId)));
-  view.querySelectorAll("[data-filter]").forEach(button => button.addEventListener("click", () => { catalogFilter = button.dataset.filter; renderApp(); }));
-  view.querySelectorAll("[data-film-id]").forEach(card => {
+function bindViewEvents(root = view) {
+  root.querySelectorAll("[data-view-link]").forEach(button => button.addEventListener("click", () => setView(button.dataset.viewLink)));
+  root.querySelectorAll("[data-gig-id]").forEach(button => button.addEventListener("click", () => openGig(button.dataset.gigId)));
+  root.querySelectorAll("[data-greenlight]").forEach(button => button.addEventListener("click", openGreenlight));
+  root.querySelectorAll("[data-live-watch]").forEach(button => button.addEventListener("click", openLiveSet));
+  root.querySelectorAll("[data-production-stage]").forEach(button => button.addEventListener("click", openProductionStage));
+  root.querySelectorAll("[data-direct-set]").forEach(button => button.addEventListener("click", () => openDirectSet(0)));
+  root.querySelectorAll("[data-send-unreal]").forEach(button => button.addEventListener("click", () => sendProductionToUnreal(state.production)));
+  root.querySelectorAll("[data-export-spec]").forEach(button => button.addEventListener("click", () => exportSceneSpec(state.production)));
+  root.querySelectorAll("[data-publish-asset]").forEach(button => button.addEventListener("click", openPublishAsset));
+  root.querySelectorAll("[data-end-cycle]").forEach(button => button.addEventListener("click", advanceCycle));
+  root.querySelectorAll("[data-world-prompt]").forEach(button => button.addEventListener("click", openWorldPrompt));
+  root.querySelectorAll("[data-invest-id]").forEach(button => button.addEventListener("click", () => investIn(button.dataset.investId)));
+  root.querySelectorAll("[data-filter]").forEach(button => button.addEventListener("click", () => { catalogFilter = button.dataset.filter; renderApp(); }));
+  root.querySelectorAll("[data-film-id]").forEach(card => {
     card.addEventListener("click", () => openFilm(card.dataset.filmId));
     card.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -1051,10 +1094,10 @@ function bindViewEvents() {
     });
   });
 
-  const refresh = view.querySelector("[data-refresh-board]");
+  const refresh = root.querySelector("[data-refresh-board]");
   if (refresh) refresh.addEventListener("click", refreshBoard);
 
-  const nextProject = view.querySelector("[data-new-project]");
+  const nextProject = root.querySelector("[data-new-project]");
   if (nextProject) nextProject.addEventListener("click", () => {
     state.production = null;
     saveState();
@@ -1064,6 +1107,7 @@ function bindViewEvents() {
 }
 
 function openDialog(markup) {
+  currentPanel = null;
   stopMotionPlayback();
   if (activeShootCleanup) {
     activeShootCleanup();
@@ -1130,7 +1174,11 @@ function openGig(gigId) {
   form.addEventListener("submit", event => {
     event.preventDefault();
     const answers = gig.questions.map((question, index) => Number(new FormData(form).get(`q${index}`)));
-    startShootChallenge(gig, answers);
+    // The timing minigame (startShootChallenge) was cut from the gig flow:
+    // the brief alone decides the take, so execution mirrors the brief score.
+    const correct = answers.filter((answer, index) => answer === gig.questions[index].answer).length;
+    const briefScore = 34 + correct * 22;
+    completeGig(gig, answers, [briefScore, briefScore, briefScore]);
   });
 }
 
@@ -1790,9 +1838,11 @@ function openDirectSet(selectedIndex = 0) {
 
 function openWorldPrompt() {
   state.worldPrompts = state.worldPrompts || [];
-  const history = state.worldPrompts.slice(-6).reverse().map(entry => `
+  const recent = state.worldPrompts.slice(-6).reverse();
+  const history = recent.map((entry, index) => `
     <div class="log-entry beat-entry">
       <strong>${escapeHTML(entry.title)}</strong> &mdash; ${entry.objects} objects, fog ${Number(entry.fog).toFixed(3)}
+      ${entry.spec ? `<button type="button" class="button compact" data-walk-history="${index}" style="float:right">&#9654; Walk</button>` : ""}
       <span class="log-note">${escapeHTML(entry.summary)}</span>
     </div>`).join("") || `<p class="subdued">Nothing generated yet. Describe any set you can imagine.</p>`;
   const paid = state.promptCycle === state.cycle;
@@ -1815,6 +1865,8 @@ function openWorldPrompt() {
       <div class="dialog-footer"><span class="text-small subdued">${TakeOneAI.status === "online" ? (TakeOneAI.healthInfo?.llm?.enabled ? "Live model connected" : "Adapter connected / local generator") : "Offline mode &mdash; browser generator active"}${paid ? " / +2 cr already earned this cycle" : " / +2 cr for your first prompt this cycle"}</span><button class="button primary" type="submit">Generate set</button></div>
     </form>`);
 
+  dialogContent.querySelectorAll("[data-walk-history]").forEach(button => button.addEventListener("click", () => openSetWalk(recent[Number(button.dataset.walkHistory)].spec)));
+
   document.getElementById("world-prompt-form").addEventListener("submit", async event => {
     event.preventDefault();
     const prompt = String(new FormData(event.currentTarget).get("prompt") || "").trim();
@@ -1830,9 +1882,12 @@ function openWorldPrompt() {
       title: scene.title || "Generated Set",
       summary: scene.summary || "",
       objects: Array.isArray(scene.objects) ? scene.objects.length : 0,
-      fog: scene.environment ? scene.environment.fog_density : 0
+      fog: scene.environment ? scene.environment.fog_density : 0,
+      spec: { title: scene.title, environment: scene.environment, objects: scene.objects }
     });
     state.worldPrompts = state.worldPrompts.slice(-12);
+    // Only the latest few keep their full spec, to keep the save small.
+    state.worldPrompts.slice(0, -6).forEach(entry => { delete entry.spec; });
 
     let rewardNote = "";
     if (state.promptCycle !== state.cycle) {
@@ -1852,12 +1907,21 @@ function openWorldPrompt() {
       "browser-offline": "browser generator (offline mode)"
     };
     preview.innerHTML = `
+      <canvas class="set-viewer" id="world-set-viewer" aria-label="3D preview of the generated set. Drag to orbit."></canvas>
+      <button type="button" class="button primary set-walk-button" id="walk-world-set">&#9654; Walk this set</button>
+      <button type="button" class="button set-walk-button" id="roblox-world-set">&#8681; Export to Roblox</button>
       <div class="log-entry">
         <strong>${escapeHTML(scene.title || "Generated Set")}</strong> <span class="log-note">built by ${escapeHTML(sourceLabels[scene.source] || "the world engine")}</span>
         <span class="log-note">${escapeHTML(scene.summary || "")}</span>
         ${(Array.isArray(scene.objects) ? scene.objects : []).slice(0, 6).map(obj => `<span class="log-note">&bull; ${escapeHTML(obj.label)} (${obj.primitive}) &mdash; ${escapeHTML(obj.asset_hint || "")}</span>`).join("")}
         <span class="log-note">${(Array.isArray(scene.objects) ? scene.objects.length : 0)} objects total.${rewardNote}</span>
       </div>`;
+    mountSetViewer(document.getElementById("world-set-viewer"), scene);
+    document.getElementById("walk-world-set").addEventListener("click", () => openSetWalk(scene));
+    document.getElementById("roblox-world-set").addEventListener("click", () => {
+      downloadRobloxSet(scene);
+      toast("Roblox script saved. Paste it into the Studio command bar to build the set.");
+    });
     submitButton.disabled = false;
     submitButton.textContent = "Generate again";
     toast(scene._fallback ? `Set generated locally.${rewardNote}` : `Set generated by the live model.${rewardNote}`);

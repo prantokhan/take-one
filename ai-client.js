@@ -76,6 +76,120 @@ const TakeOneAI = (() => {
     return hash >>> 0;
   }
 
+  // Keyword-driven set kits so the offline generator reflects the prompt
+  // (a harbor gets water, piers and boats; a forest gets trees) instead of
+  // random masses. Output stays inside the scene schema: cube / sphere /
+  // cylinder / cone primitives, Unreal units (cm), z-up, pivot at center.
+  function themedSetKit(lower, seed, night) {
+    const out = [];
+    let n = 0;
+    const rand = () => { seed = (Math.imul(seed ^ (seed >>> 15), 2246822507) + 0x6d2b79f5) >>> 0; return seed / 4294967296; };
+    const add = (label, primitive, x, y, w, d, h, color, extra = {}) => out.push({
+      id: `kit_${n++}`, label, primitive,
+      location: { x: Math.round(x), y: Math.round(y), z: Math.round(extra.z ?? h * 50) },
+      rotation: { pitch: 0, yaw: Math.round(extra.yaw ?? 0), roll: 0 },
+      scale: { x: +w.toFixed(2), y: +d.toFixed(2), z: +h.toFixed(2) },
+      color, cast_shadow: true, asset_hint: label.toLowerCase()
+    });
+    const lamp = (x, y) => {
+      add("Street lamp pole", "cylinder", x, y, 0.15, 0.15, 4.5, "#2A2E33");
+      add("Lamp glow", "sphere", x, y, 0.6, 0.6, 0.6, night ? "#FFD27A" : "#E8E2C8", { z: 470 });
+    };
+    const tree = (x, y, s = 1) => {
+      add("Tree trunk", "cylinder", x, y, 0.4 * s, 0.4 * s, 3 * s, "#4A3524");
+      add("Tree canopy", rand() < 0.5 ? "cone" : "sphere", x, y, 2.6 * s, 2.6 * s, 3 * s, night ? "#1C3322" : "#2F6B3A", { z: 420 * s });
+    };
+    let matched = false;
+
+    if (/harbor|harbour|dock|pier|port|sea|ocean|beach|lake|river|boat|ship/.test(lower)) {
+      matched = true;
+      out.heroLabel = "Moored boat";
+      add("Open water", "cube", 0, 1300, 30, 16, 0.2, night ? "#0B1B2E" : "#24587A", { z: 5 });
+      add("Wooden pier", "cube", -300, 700, 3, 16, 0.4, "#6B4E31", { z: 40 });
+      for (let i = 0; i < 6; i++) add("Pier post", "cylinder", -420 + (i % 2) * 240, 100 + Math.floor(i / 2) * 500, 0.3, 0.3, 1.4, "#3E2C1C");
+      add("Fishing boat hull", "cube", 400, 1100, 6, 2.4, 1.4, "#8C2F28", { yaw: 20 });
+      add("Boat cabin", "cube", 380, 1090, 2, 1.8, 1.6, "#E8E2D0", { yaw: 20, z: 220 });
+      add("Boat mast", "cylinder", 460, 1120, 0.15, 0.15, 7, "#D8D2C0", { z: 420 });
+      for (let i = 0; i < 5; i++) add("Cargo crate", "cube", -900 + rand() * 500, -200 + rand() * 500, 1.2, 1.2, 1.2, ["#A0522D", "#546E7A", "#8D6E63"][i % 3], { yaw: rand() * 90 });
+      add("Harbor warehouse", "cube", -1300, -700, 10, 7, 6, "#5C5F66");
+      lamp(-150, 0); lamp(200, -300);
+    }
+    if (/city|street|avenue|alley|downtown|neon|urban|road|traffic/.test(lower)) {
+      matched = true;
+      out.heroLabel = out.heroLabel || "Parked car";
+      add("Asphalt street", "cube", 0, 0, 40, 9, 0.1, "#22252A", { z: 2 });
+      for (let i = 0; i < 8; i++) {
+        const side = i % 2 ? 1 : -1;
+        const h = 4 + rand() * 7;
+        add("Building", "cube", -1500 + Math.floor(i / 2) * 900, side * 1100, 7, 6, h, ["#3B3F47", "#4A4038", "#2E3A45", "#50505A"][i % 4]);
+        if (/neon/.test(lower) || night) add("Neon sign", "cube", -1500 + Math.floor(i / 2) * 900, side * 780, 2.4, 0.2, 0.8, ["#FF2E88", "#28E0FF", "#B8FF3C"][i % 3], { z: 420 });
+      }
+      add("Parked car body", "cube", 250, 250, 4.4, 1.9, 1.1, "#9A2323");
+      add("Parked car roof", "cube", 230, 250, 2.4, 1.7, 0.7, "#7A1C1C", { z: 145 });
+      lamp(-600, 480); lamp(600, 480); lamp(0, -480);
+    }
+    if (/\b(forest|woods?|woodland|jungle|park|garden|trees?|grove)\b/.test(lower)) {
+      matched = true;
+      out.heroLabel = out.heroLabel || "Fallen log";
+      for (let i = 0; i < 14; i++) {
+        const a = rand() * Math.PI * 2, r = 700 + rand() * 1500;
+        tree(Math.cos(a) * r, Math.sin(a) * r, 0.8 + rand() * 0.8);
+      }
+      add("Fallen log", "cylinder", 300, 200, 0.7, 0.7, 5, "#5A4030", { yaw: 30, z: 35 });
+      for (let i = 0; i < 4; i++) add("Mossy rock", "sphere", -300 + rand() * 900, -400 + rand() * 800, 1 + rand(), 1 + rand(), 0.8, "#55605A");
+    }
+    if (/desert|dune|sand|canyon|mesa|wasteland/.test(lower)) {
+      matched = true;
+      out.heroLabel = out.heroLabel || "Abandoned truck";
+      for (let i = 0; i < 7; i++) add("Sand dune", "sphere", -2000 + i * 650, 900 + rand() * 900, 10, 6, 2.5, "#C9A46A", { z: 60 });
+      for (let i = 0; i < 4; i++) add("Rock mesa", "cylinder", -1500 + rand() * 3000, -1400 - rand() * 400, 5, 5, 6 + rand() * 6, "#9A5B3A");
+      add("Cactus", "cylinder", -400, 300, 0.5, 0.5, 3, "#4F7A3A");
+      add("Truck body", "cube", 300, -100, 5, 2.2, 2, "#8A6F4E", { yaw: -25 });
+    }
+    if (/room|office|apartment|kitchen|bar|diner|house|interior|lab|library|bedroom|cafe/.test(lower)) {
+      matched = true;
+      out.heroLabel = out.heroLabel || "Central table";
+      add("Back wall", "cube", 0, 900, 20, 0.3, 4, "#6B6258");
+      add("Side wall", "cube", -1000, 0, 0.3, 18, 4, "#5E574F");
+      add("Side wall", "cube", 1000, 0, 0.3, 18, 4, "#5E574F");
+      add("Central table", "cube", 0, 100, 3, 1.6, 0.8, "#6A4A30");
+      for (let i = 0; i < 4; i++) add("Chair", "cube", (i % 2 ? 1 : -1) * 230, 100 + (i < 2 ? -90 : 90), 0.6, 0.6, 1, "#3A2E26");
+      add("Pendant lamp", "sphere", 0, 100, 0.8, 0.8, 0.5, "#FFE2A0", { z: 330 });
+      add(/library/.test(lower) ? "Bookshelf" : /kitchen|diner|bar|cafe/.test(lower) ? "Counter" : "Cabinet", "cube", -600, 780, 4, 0.8, 2.4, "#4E3B2C");
+      add("Window", "cube", 500, 880, 3, 0.2, 2, night ? "#1B2C55" : "#BFD8E8", { z: 220 });
+    }
+    if (/space|orbit|station|ship|alien|moon|mars|planet|sci-?fi/.test(lower) && !/boat/.test(lower)) {
+      matched = true;
+      out.heroLabel = out.heroLabel || "Landing craft";
+      add("Landing pad", "cylinder", 0, 0, 14, 14, 0.2, "#3C4048", { z: 10 });
+      add("Landing craft hull", "cone", 0, 0, 4, 4, 6, "#C8CCD4", { z: 320 });
+      for (let i = 0; i < 3; i++) add("Landing strut", "cylinder", Math.cos(i * 2.1) * 260, Math.sin(i * 2.1) * 260, 0.2, 0.2, 1.8, "#6A6E76");
+      add("Habitat dome", "sphere", -1200, 600, 9, 9, 5, "#8FA3B8");
+      add("Antenna mast", "cylinder", 1100, -500, 0.2, 0.2, 10, "#9AA0A8");
+      add("Planet on horizon", "sphere", 1500, 3200, 20, 20, 20, "#B8643A", { z: 2600 });
+      for (let i = 0; i < 5; i++) add("Crater rim", "cylinder", -2000 + rand() * 4000, -1800 + rand() * 1200, 5, 5, 0.4, "#5A5A60");
+    }
+    if (/snow|winter|ice|frozen|arctic/.test(lower)) {
+      matched = true;
+      add("Snow field", "cube", 0, 0, 60, 50, 0.1, "#E6EEF4", { z: 3 });
+      for (let i = 0; i < 8; i++) {
+        const a = rand() * Math.PI * 2, r = 900 + rand() * 1200;
+        add("Pine", "cone", Math.cos(a) * r, Math.sin(a) * r, 2.4, 2.4, 5, "#2E4A3A");
+      }
+      add("Snowdrift", "sphere", -400, 500, 4, 3, 1, "#F2F6FA", { z: 20 });
+    }
+    if (/rain|storm|wet|flood/.test(lower)) {
+      matched = true;
+      for (let i = 0; i < 5; i++) add("Puddle", "cylinder", -800 + rand() * 1600, -800 + rand() * 1600, 2 + rand() * 2, 1.5 + rand() * 2, 0.02, "#1E3040", { z: 3 });
+    }
+    if (/fire|burn|campfire|explosion/.test(lower)) {
+      matched = true;
+      add("Fire core", "cone", -250, -250, 1.2, 1.2, 1.8, "#FF7A1A");
+      add("Fire glow", "sphere", -250, -250, 2, 2, 1, "#FFB347", { z: 60 });
+    }
+    return matched ? out : [];
+  }
+
   function localFor(path, payload) {
     if (path === "/v1/scenes/generate") {
       // Offline set generator: mirrors the adapter's local generator so
@@ -105,7 +219,12 @@ const TakeOneAI = (() => {
           asset_hint: `hero subject matching: ${prompt}`.slice(0, 300)
         }
       ];
-      const count = 8 + (seed % 8);
+      const kitObjects = themedSetKit(lower, seed, night);
+      if (kitObjects.length) {
+        objects[1].label = kitObjects.heroLabel || objects[1].label;
+        objects.push(...kitObjects);
+      }
+      const count = kitObjects.length ? 0 : 8 + (seed % 8);
       for (let index = 0; index < count; index += 1) {
         const elementSeed = hashOf(`${prompt}:${index}`);
         const angle = (elementSeed % 628) / 100;

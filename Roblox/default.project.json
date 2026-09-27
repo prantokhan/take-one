@@ -11,6 +11,15 @@
         "$className": "Folder",
         "GenerateScene": {
           "$className": "RemoteEvent"
+        },
+        "GameAction": {
+          "$className": "RemoteFunction"
+        },
+        "StateChanged": {
+          "$className": "RemoteEvent"
+        },
+        "ReturnToLot": {
+          "$className": "RemoteEvent"
         }
       }
     },

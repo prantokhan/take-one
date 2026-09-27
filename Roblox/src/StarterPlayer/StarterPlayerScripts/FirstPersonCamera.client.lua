@@ -1,26 +1,36 @@
 --[[
-  FirstPersonCamera — locks the player's camera to first-person on spawn.
+  Camera — classic Roblox third-person on the lot (zoom with the scroll
+  wheel, right-drag to look), with V toggling a locked first-person view
+  for walking generated sets like a camera operator.
 
-  Unlike the Unreal port (TakeOneWalkPawn, which hand-implements movement,
-  mouse-look, and a first-/third-person toggle in C++), Roblox's default
-  Humanoid + camera already provides WASD movement, jump (Space), and
-  mouse-look out of the box — nothing to write for that part. This script
-  only sets the one property needed to start the player locked into FPV
-  instead of Roblox's usual third-person-over-the-shoulder default.
+  Replaces the old always-first-person lock: the lot is a social hub, so
+  seeing your own avatar (and everyone else's) is the Roblox-native default.
+  Works unchanged in VR, where Roblox drives the camera from the headset.
 ]]
 
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
-local function lockFirstPerson()
-	-- LockFirstPerson also disables the third-person camera entirely, which
-	-- is what "playable FPV" means here — the player never sees their own
-	-- character's back. Scroll-to-zoom (Roblox's default free camera) is
-	-- deliberately not offered so the game stays first-person by default.
-	player.CameraMode = Enum.CameraMode.LockFirstPerson
-	player.CameraMinZoomDistance = 0.5
-	player.CameraMaxZoomDistance = 0.5
+local player = Players.LocalPlayer
+local firstPerson = false
+
+local function apply()
+	if firstPerson then
+		player.CameraMode = Enum.CameraMode.LockFirstPerson
+		player.CameraMinZoomDistance = 0.5
+		player.CameraMaxZoomDistance = 0.5
+	else
+		player.CameraMode = Enum.CameraMode.Classic
+		player.CameraMinZoomDistance = 6
+		player.CameraMaxZoomDistance = 40
+	end
 end
 
-lockFirstPerson()
-player.CharacterAdded:Connect(lockFirstPerson)
+apply()
+player.CharacterAdded:Connect(apply)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed or input.KeyCode ~= Enum.KeyCode.V then return end
+	firstPerson = not firstPerson
+	apply()
+end)
